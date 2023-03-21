@@ -1,0 +1,44 @@
+## VARS
+## A variable line must start with `##var:` follow by a name
+## The variable name must start with a letter or an underscore
+## The variable can contain numbers after the inital character
+## The variable can only contain the characters a-zA-Z0-9_
+## Notice: After the varname, delimiter can be = or :
+## Optional, you can specify a list of default values
+##var:first_name=Mike,Steve,John
+##var:last_name=Jones,Smith,White
+##var:fav_number
+##var:fav_color:blue,yellow,green,red
+##var:not_used
+
+## Comment lines with two or more `#`s are not imported
+## Comment lines with one `#` are imported
+## There is an option to skip over comment lines when typing (default=True)
+
+## This comment line will **not** be imported
+# This comment line will be imported
+#this comment line will be imported also
+
+## Put the variable inside `{}` characters
+## You can add notation like `:0>3` to add leading zeros or other formatting
+## The formatting rule must be for strings (not ints or floats)
+## For more info please see: https://docs.python.org/3/library/string.html#format-specification-mini-language
+
+Hello {first_name} {last_name}
+
+Favorite color is: {fav_color} 
+
+Favorite numer is {fav_number}
+
+Favorite number with leading zeros and 5 digits: {fav_number:0>5}
+
+Below is first name and last name centered by 40 digits each
+{first_name: ^40}{last_name: ^40}
+
+Below is first name right aligned and last name left aligned 40 digits each
+{first_name: >40}{last_name: <40}
+
+Below is first name left aligned and last name right aligned 40 digits each
+{first_name: <40}{last_name: >40}
+
+The item named not_used was not used.

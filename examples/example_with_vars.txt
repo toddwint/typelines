@@ -32,13 +32,13 @@ Favorite numer is {fav_number}
 
 Favorite number with leading zeros and 5 digits: {fav_number:0>5}
 
-Below is first name and last name centered by 40 digits each
+Below is first name and last name centered by spaces 40 digits each
 {first_name: ^40}{last_name: ^40}
 
-Below is first name right aligned and last name left aligned 40 digits each
-{first_name: >40}{last_name: <40}
+Below is first name right aligned and last name left aligned by underscores 40 digits each
+{first_name:_>40}{last_name:_<40}
 
-Below is first name left aligned and last name right aligned 40 digits each
-{first_name: <40}{last_name: >40}
+Below is first name left aligned and last name right aligned by dashes 40 digits each
+{first_name:-<40}{last_name:->40}
 
 The item named not_used was not used.

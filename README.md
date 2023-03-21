@@ -106,7 +106,7 @@ sudo -E python3 ./typelines.py
 
 Please see pynput's webpage on [Platform limitations](https://pynput.readthedocs.io/en/latest/limitations.html).
 
-I tested on macOS in a virtual machine running macOS Catalina Version 10.15.7.  However, it runs intermitently. I believe this is due to pynput's keyboard listener not being trusted by macOS. I cannot nail down the settings needed to run this on macOS and have basically given up.
+I tested on macOS in a virtual machine running macOS Catalina Version 10.15.7.  However, it runs intermittently. I believe this is due to pynput's keyboard listener not being trusted by macOS. I cannot nail down the settings needed to run this on macOS and have basically given up.
 
 Also, I implemented one hack because the function keys were not being recognized as their proper values. This hack may or may not work on your machine. If you have feedback, please send it my way.
 

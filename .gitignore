@@ -8,3 +8,4 @@ docs/make
 docs/markdown
 docs/output
 docs/figures/old
+docs/figures/old/*

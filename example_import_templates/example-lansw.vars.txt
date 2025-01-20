@@ -1,0 +1,40 @@
+## VARS
+## A variable line must start with `##var:` follow by a name
+## The variable name must start with a letter or an underscore
+## The variable can contain numbers after the inital character
+## The variable can only contain the characters a-zA-Z0-9_
+## Notice: After the varname, delimiter can be = or :
+## Optional, you can specify a list of default values
+##var:sitename=NY,LA,SF
+##var:sitenumber:1,2,3
+##var:os=switch1.swi,switch2.swi
+##var:password
+##var:vlanname
+
+## Comment lines with two or more `#`s are not imported
+## Comment lines with one `#` are imported
+## There is an option to skip over comment lines when typing (default=True)
+
+## This comment line will **not** be imported
+# This comment line will be imported
+#this comment line will be imported also
+
+## Put the variable inside `{}` characters
+## You can add notation like `:0>3` to add leading zeros or other formatting
+## The formatting rule must be for strings (not ints or floats)
+## For more info please see: https://docs.python.org/3/library/string.html#format-specification-mini-language
+
+configure
+hostname {sitename}-sw{sitenumber:0>3}
+vlan 1 ip address 10.1.1.2/24
+vlan 1 name {vlanname}
+copy tftp flash 10.1.1.1 {os} primary
+y
+reload
+y
+config
+password manager plaintext {password}
+password operator plaintext {password}
+reload
+y
+n

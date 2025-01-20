@@ -1,0 +1,19 @@
+## Comment lines with two or more `#`s are not imported
+## Comment lines with one `#` are imported
+## There is an option to skip over comment lines when typing (default=True)
+
+## This comment line will **not** be imported
+# This comment line will be imported
+#this comment line will be imported also
+
+Hello Mike Jones
+Favorite color is: blue 
+Favorite numer is 7
+Favorite number with leading zeros and 5 digits: 00007
+Below is first name and last name centered by spaces 40 digits each
+                  Mike                                   Jones                  
+Below is first name right aligned and last name left aligned by underscores 40 digits each
+____________________________________MikeJones___________________________________
+Below is first name left aligned and last name right aligned by dashes 40 digits each
+Mike-----------------------------------------------------------------------Jones
+The item named not_used was not used.

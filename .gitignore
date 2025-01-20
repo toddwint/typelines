@@ -1,0 +1,8 @@
+__pycache__
+__pycache__/*
+bash-completion/create_bash_completion.sh
+bash-completion/typelines.py.bak
+bkup
+bkup/*
+docs
+docs/*

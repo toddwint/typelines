@@ -9,7 +9,7 @@ The list cycles back around to the top after the last command.
 
 __progname__ = 'Type Lines'
 __version__ = '0.0.12'
-__date__ = '2025-01-19'
+__date__ = '2025-01-20'
 __author__ = 'Todd Wintermute'
 
 import argparse
@@ -164,7 +164,7 @@ def typeline_gobackward():
 
 def updatetypenextkey():
     """Reset selection to first item when hotkey is changed."""
-    tmplist = list(listbox.get(0, "end"))
+    tmplist = list(listbox.get(0, 'end'))
     if not tmplist:
         return False
     listbox.selection_set(0)
@@ -173,7 +173,7 @@ def updatetypenextkey():
 
 def updaterepeatkey():
     """Reset selection to first item when hotkey is changed."""
-    tmplist = list(listbox.get(0, "end"))
+    tmplist = list(listbox.get(0, 'end'))
     if not tmplist:
         return False
     listbox.selection_set(0)
@@ -204,7 +204,6 @@ def edititem(text, pos):
 
 def submit_edit_item(child, text, pos):
     """Edit selected list item and close the edit window."""
-    listbox.insert(pos+1, text)
     edititem(text, pos)
     childdismiss(child)
 
@@ -240,8 +239,8 @@ def copy_gonext():
 
 def warning_no_selection():
     """Warning when no item is selected, and an action is requested."""
-    title = "No selection"
-    message = "No line selected. Select a line first."
+    title = 'No selection'
+    message = 'No line selected. Select a line first.'
     tk.messagebox.showwarning(title=title, message=message)
 
 
@@ -255,23 +254,23 @@ def edit_item_window():
     myedit = tk.Toplevel(root)
     myedit.title('Edit item')
     mychild = ttk.Frame(myedit, padding=(2,2,2,2))
-    mychild.grid(column=0, row=0, sticky="NWES")
+    mychild.grid(column=0, row=0, sticky='NWES')
     lbl1 = ttk.Label(mychild)
     lbl1.config(text='Item:')
-    lbl1.grid(column=1, row=1, sticky="S")
+    lbl1.grid(column=1, row=1, sticky='S')
     ent1 = ttk.Entry(mychild, justify='center')
-    str1 = tk.StringVar(value=curtext) #def first var
+    str1 = tk.StringVar(value=curtext)
     ent1.config(textvariable=str1, width=66)
     ent1.icursor('end')
-    ent1.grid(column=1, row=2, sticky="WE")
+    ent1.grid(column=1, row=2, sticky='WE')
     btn1 = ttk.Button(mychild)
-    btn1.config(text="Submit")
+    btn1.config(text='Submit')
     btn1.config(command=(lambda: submit_edit_item(
         myedit, ent1.get(), curpos
         )))
-    btn1.grid(column=1, row=3, sticky="EWNS")
-    myedit.bind("<Escape>", lambda event: childdismiss(myedit))
-    myedit.bind("<Return>", lambda event: submit_edit_item(
+    btn1.grid(column=1, row=3, sticky='EWNS')
+    myedit.bind('<Escape>', lambda event: childdismiss(myedit))
+    myedit.bind('<Return>', lambda event: submit_edit_item(
         myedit, ent1.get(), curpos
         ))
     for child in mychild.winfo_children():
@@ -288,14 +287,13 @@ def edit_item_window():
 def additem(element):
     """Add a new item to the list."""
     for line in [line for line in element.splitlines()]:
-        listbox.insert("end", line)
+        listbox.insert('end', line)
     removeblanklines()
 
 
 def insert_item_before_window():
     """Add a new item to the list before the selection."""
     insert_item_window(before_or_after='before')
-    # windows puts curos at start of edit text???
 
 
 def insert_item_after_window():
@@ -314,22 +312,22 @@ def insert_item_window(before_or_after='after'):
     myinsert = tk.Toplevel(root)
     myinsert.title('Insert item')
     mychild = ttk.Frame(myinsert, padding=(2,2,2,2))
-    mychild.grid(column=0, row=0, sticky="NWES")
+    mychild.grid(column=0, row=0, sticky='NWES')
     lbl1 = ttk.Label(mychild)
     lbl1.config(text='Item:')
-    lbl1.grid(column=1, row=1, sticky="S")
+    lbl1.grid(column=1, row=1, sticky='S')
     ent1 = ttk.Entry(mychild, justify='center')
-    str1 = tk.StringVar() #def first var
+    str1 = tk.StringVar()
     ent1.config(textvariable=str1)
     ent1.config(width=66)
-    ent1.grid(column=1, row=2, sticky="WE")
+    ent1.grid(column=1, row=2, sticky='WE')
     btn1 = ttk.Button(mychild)
-    btn1.config(text="Submit")
+    btn1.config(text='Submit')
     btn1.config(command=(lambda: submit(myinsert, ent1.get())))
     btn1.grid(column=1, row=3)
-    btn1.grid(sticky="EWNS")
-    myinsert.bind("<Escape>", lambda event: childdismiss(myinsert))
-    myinsert.bind("<Return>", lambda event: submit(myinsert, ent1.get()))
+    btn1.grid(sticky='EWNS')
+    myinsert.bind('<Escape>', lambda event: childdismiss(myinsert))
+    myinsert.bind('<Return>', lambda event: submit(myinsert, ent1.get()))
     for child in mychild.winfo_children():
         child.grid_configure(padx=2, pady=2)
     myinsert.update()
@@ -395,11 +393,11 @@ def removeitem():
             return True
         curpos = listbox.curselection()[0]
         listbox.delete(listbox.curselection())
-        if curpos < len(listbox.get(0, "end")):
+        if curpos < len(listbox.get(0, 'end')):
             listbox.selection_set(curpos)
             listbox.see(curpos)
-        elif curpos >= len(listbox.get(0, "end")):
-            listbox.selection_set(len(listbox.get(0, "end"))-1)
+        elif curpos >= len(listbox.get(0, 'end')):
+            listbox.selection_set(len(listbox.get(0, 'end'))-1)
             listbox.see(curpos)
         else:
             listbox.selection_set(0)
@@ -408,15 +406,15 @@ def removeitem():
         return False
         warning_no_selection()
     if not len(listbox.get(0, 'end')):
-        listbox.insert(0, "")
+        listbox.insert(0, '')
         listbox.selection_set(0)
         listbox.see(0)
 
 
 def clearclipboard():
     """Remove all lines from the list."""
-    listbox.delete(0, "end")
-    listbox.insert(0, "")
+    listbox.delete(0, 'end')
+    listbox.insert(0, '')
     listbox.selection_set(0)
     listbox.see(0)
 
@@ -471,8 +469,6 @@ def updatechildcombo(child, text, varsdict, myvarscmbs2):
         ]
     listbox_text.set(fmttextlist)
     removeblanklines()
-    #if listbox.curselection():
-    #    listbox.selection_clear(listbox.curselection())
     listbox.selection_clear(0, 'end')
     listbox.selection_set(0)
     listbox.see(0)
@@ -493,8 +489,6 @@ def importwithoutvars(text):
     textlist = [x for x in textlist if not re.match(r'^#[^ a-zA-Z0-9]',x)]
     listbox_text.set(textlist)
     removeblanklines()
-    #if listbox.curselection():
-    #    listbox.selection_clear(listbox.curselection())
     listbox.selection_clear(0, 'end')
     listbox.selection_set(0)
     listbox.see(0)
@@ -511,17 +505,17 @@ def importwithvars(text, varsdict):
     myvars = tk.Toplevel(root)
     myvars.title('Import list file with vars')
     mychild = ttk.Frame(myvars, padding=(2,2,2,2))
-    mychild.grid(column=0, row=0, sticky="NWES")
+    mychild.grid(column=0, row=0, sticky='NWES')
     myvarslbls1 = []
     myvarslbls1.append(ttk.Label(mychild))
     myvarslbls1[-1].config(text='Variable')
-    myvarslbls1[-1].grid(column=1, row=1, sticky="ES")
+    myvarslbls1[-1].grid(column=1, row=1, sticky='ES')
     myvarslbls1.append(ttk.Label(mychild))
     myvarslbls1[-1].config(text='Select from list')
-    myvarslbls1[-1].grid(column=2, row=1, sticky="S")
+    myvarslbls1[-1].grid(column=2, row=1, sticky='S')
     myvarslbls1.append(ttk.Label(mychild))
     myvarslbls1[-1].config(text='Manually specify')
-    myvarslbls1[-1].grid(column=3, row=1, sticky="S")
+    myvarslbls1[-1].grid(column=3, row=1, sticky='S')
     myvarslbls2 = []
     myvarscmbs2 = []
     myvarsstrs2 = []
@@ -529,25 +523,25 @@ def importwithvars(text, varsdict):
     for n, (keyss, values) in enumerate(varsdict.items(),2):
         myvarslbls2.append(ttk.Label(mychild))
         myvarslbls2[-1].config(text=f"{keyss}:")
-        myvarslbls2[-1].grid(column=1, row=n, sticky="EN")
-        myvarsstrs2.append(tk.StringVar(value=values[0])) #def first var
+        myvarslbls2[-1].grid(column=1, row=n, sticky='EN')
+        myvarsstrs2.append(tk.StringVar(value=values[0]))
         myvarscmbs2.append(ttk.Combobox(mychild, justify='center'))
         myvarscmbs2[-1].config(textvariable=myvarsstrs2[-1])
         myvarscmbs2[-1].config(values=values)
-        myvarscmbs2[-1].grid(column=2, row=n, sticky="WN")
+        myvarscmbs2[-1].grid(column=2, row=n, sticky='WN')
         myvarsents2.append(ttk.Entry(mychild, justify='center'))
         myvarsents2[-1].config(textvariable=myvarsstrs2[-1])
-        myvarsents2[-1].grid(column=3, row=n, sticky="WN")
+        myvarsents2[-1].grid(column=3, row=n, sticky='WN')
     myvarsbtns1 = []
     myvarsbtns1.append(ttk.Button(mychild))
-    myvarsbtns1[-1].config(text="Submit")
+    myvarsbtns1[-1].config(text='Submit')
     myvarsbtns1[-1].config(command=( lambda: updatechildcombo(
         myvars, text, varsdict, myvarscmbs2
         )))
     myvarsbtns1[-1].grid(column=1, columnspan=3, row=n+1, rowspan=3)
-    myvarsbtns1[-1].grid(sticky="EWNS")
-    myvars.bind("<Escape>", lambda event: childdismiss(myvars))
-    myvars.bind("<Return>", lambda event: updatechildcombo(
+    myvarsbtns1[-1].grid(sticky='EWNS')
+    myvars.bind('<Escape>', lambda event: childdismiss(myvars))
+    myvars.bind('<Return>', lambda event: updatechildcombo(
         myvars, text, varsdict, myvarscmbs2
         ))
     for child in mychild.winfo_children():
@@ -564,14 +558,18 @@ def importfromfile(filename=''):
     """Import a file and replace the contents of the list."""
     if not filename:
         initialdir = pathlib.Path()
-        filename = tkinter.filedialog.askopenfilename(initialdir=initialdir)
+        filename = tkinter.filedialog.askopenfilename(
+            #initialdir=initialdir,  # omit and last location is used
+            defaultextension='.txt',
+            filetypes=(('Text file', '.txt'), ('All files', '*.*'))
+            )
     if not filename:
         return False
     importfile = pathlib.Path(filename)
     if importfile.exists():
         text = importfile.read_text()
     else:
-        title = "File does not exist"
+        title = 'File does not exist'
         message = f"{importfile} does not exist"
         tk.messagebox.showwarning(title=title, message=message)
         return False
@@ -598,7 +596,7 @@ def importfromfile(filename=''):
 
 def cycleforward():
     """Move the selection to the next item."""
-    tmplist = list(listbox.get(0, "end"))
+    tmplist = list(listbox.get(0, 'end'))
     if not tmplist: return
     if not listbox.curselection():
         return False
@@ -618,7 +616,7 @@ def cycleforward():
 
 def cyclebackward():
     """Move the selection to the previous item."""
-    tmplist = list(listbox.get(0, "end"))
+    tmplist = list(listbox.get(0, 'end'))
     if not tmplist: return
     if not listbox.curselection():
         return False
@@ -647,16 +645,21 @@ def checkcb():
         pyperclip.copy('')
         if listbox.curselection():
             listbox.selection_clear(listbox.curselection()[0])
-        listbox.select_set("end")
-        listbox.see("end")
+        listbox.select_set('end')
+        listbox.see('end')
     hookcbid = root.after(10, checkcb)
 
 
 def savelisttofile():
     """Save the current list to a file."""
-    filename = tkinter.filedialog.asksaveasfile(initialdir=".")
+    initialdir = pathlib.Path()
+    filename = tkinter.filedialog.asksaveasfile(
+        #initialdir=initialdir,  # omit and last location is used
+        defaultextension='.txt',
+        filetypes=(('Text file', '.txt'), ('All files', '*.*'))
+        )
     if filename:
-        filename.write('\n'.join(listbox.get(0,"end")))
+        filename.write('\n'.join(listbox.get(0, 'end')))
         filename.close()
     else:
         return False
@@ -664,7 +667,7 @@ def savelisttofile():
 
 def system_info():
     """Show system platform and keyboard backend used."""
-    title = "System Information"
+    title = 'System Information'
     message = (
         f"Platform: {supported_platforms[userplatform]}\n"
         f"Keyboard backend: {bkend}\n")
@@ -673,7 +676,7 @@ def system_info():
 
 def about():
     """Show program name, version, and author."""
-    title = "About"
+    title = 'About'
     message = (
         f"{__progname__}\n"
         f"Version: {__version__} ({__date__})\n"
@@ -699,7 +702,8 @@ def startkeyboardlistener():
     global listener
     if 'listener' in globals():
         if not listener.running:
-            listener.start()  # start to listen on a separate thread
+            listener.start()  
+            # listener uses a separate thread
         is_keyboard_hooked = True
     else:
         listener = define_kybd_listener()
@@ -721,10 +725,10 @@ def togglekeyboardlistener():
     if 'listener' in globals():
         if is_keyboard_hooked:
             stopkeyboardlistener()
-            togglekeyboard.set("Start keyboard listener")
+            togglekeyboard.set('Start keyboard listener')
         else:
             startkeyboardlistener()
-            togglekeyboard.set("Stop keyboard listener")
+            togglekeyboard.set('Stop keyboard listener')
     else:
         listener = define_kybd_listener()
         togglekeyboardlistener()
@@ -742,7 +746,7 @@ def removeblanklines():
             # no need to remove blank lines or change my curpos
             pass
         else:
-            listbox.delete(0, "end")
+            listbox.delete(0, 'end')
             listbox.insert(0, *tmpl)
             listbox.selection_set(0)
             listbox.see(0)
@@ -773,9 +777,9 @@ def detect_keyboard_window(timeout_seconds):
         'Determining keyboard device id\n\n'
         f"Timeout set to {timeout_seconds} seconds\n\n"
         'Press ENTER')
-    label = ttk.Label(main, justify="center", text=text)
+    label = ttk.Label(main, justify='center', text=text)
     label.pack(pady=10)
-    main.protocol("WM_DELETE_WINDOW", quit_detect_keyboard_window)
+    main.protocol('WM_DELETE_WINDOW', quit_detect_keyboard_window)
     main.update()
     main.minsize(main.winfo_width(), main.winfo_height())
     main.focus_force()
@@ -816,7 +820,7 @@ def detect_keyboard():
                     return device_path
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # Start of main program
     parser = parse_arguments()
     args = parser.parse_args()
@@ -836,8 +840,8 @@ if __name__ == "__main__":
         if rootuser:
             print("I see you're running as root.")
         else:
-            print("On macOS you should run as root: ", end='')
-            print("`sudo -E python3 ./typelines.py`")
+            print('On macOS you should run as root: ', end='')
+            print('`sudo -E python3 ./typelines.py`')
     elif userplatform == 'linux':
         # Linux platforms
         # Keyboard backends determined by desktop environment
@@ -865,7 +869,7 @@ if __name__ == "__main__":
             os.environ['PYNPUT_BACKEND_KEYBOARD'] = 'uinput'
             os.environ['PYNPUT_BACKEND_MOUSE'] = 'dummy'
         else:
-            title = "Unsupported Window System"
+            title = 'Unsupported Window System'
             message = (
                 'Window system could not be determined. '
                 'Supported values are xorg and wayland.'
@@ -873,11 +877,11 @@ if __name__ == "__main__":
             tk.messagebox.showwarning(title=title, message=message)
             sys.exit(1)
     else:
-        title = "Unsupported platform"
+        title = 'Unsupported platform'
         message = (
-            "Sorry, your platform is not supported: "
+            'Sorry, your platform is not supported: '
             f"`{supported_platforms[userplatform]}`.\n"
-            "Supported platforms: "
+            'Supported platforms: '
             f"{', '.join(supported_platforms.values())}"
             )
         tk.messagebox.showwarning(title=title, message=message)
@@ -887,8 +891,8 @@ if __name__ == "__main__":
     import pynput
 
     Key = pynput.keyboard.Key
-    # define the keylist as F1 through F20
     keylist = {f'f{n+1}': f'f{n+1}' for n in range(20)}
+    # define the keylist as F1 through F20
     keydict = {
         # keydict is only used in the win32_event_filter
         key.name: key.value.vk for key in pynput.keyboard.Key
@@ -915,7 +919,7 @@ if __name__ == "__main__":
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
     mygui = ttk.Frame(root, padding=(2,2,2,2))
-    mygui.grid(column=0, row=0, sticky="NSWE")
+    mygui.grid(column=0, row=0, sticky='NSWE')
     mygui.columnconfigure(6, weight=1)
     mygui.rowconfigure(15, weight=1)
     ui_objs = list()
@@ -932,7 +936,7 @@ if __name__ == "__main__":
     for label, command in mainmenu_file_items:
         mainmenu_file.add_command(label=label, command=command)
     mainmenu_file.add_separator()
-    mainmenu_file.add_command(label="Exit", command=root.destroy)
+    mainmenu_file.add_command(label='Exit', command=root.destroy)
     mainmenu.add_cascade(label='File', menu=mainmenu_file)
 
     ## Main menu - Actions
@@ -979,48 +983,48 @@ if __name__ == "__main__":
     # `Type & Advance` label and combobox
     forward = tk.StringVar(value=keyforward)
     ui_obj = ttk.Label(mygui)
-    ui_obj.config(text="`Type & Advance` Key")
-    ui_obj.grid(column=1, row=1, sticky="E")
+    ui_obj.config(text='`Type & Advance` Key')
+    ui_obj.grid(column=1, row=1, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
     ui_obj.config(textvariable=forward, values=list(keylist), width=5)
-    ui_obj.grid(column=2, row=1, sticky="WE")
+    ui_obj.grid(column=2, row=1, sticky='WE')
     ui_obj.bind('<<ComboboxSelected>>', lambda e: updatetypenextkey())
     ui_objs.append(ui_obj)
 
     # `Type & Stay` label and combobox
     repeat = tk.StringVar(value=keyrepeat)
     ui_obj = ttk.Label(mygui)
-    ui_obj.config(text="`Type & Stay` Key")
-    ui_obj.grid(column=1, row=2, sticky="E")
+    ui_obj.config(text='`Type & Stay` Key')
+    ui_obj.grid(column=1, row=2, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
     ui_obj.config(textvariable=repeat, values=list(keylist), width=5)
-    ui_obj.grid(column=2, row=2, sticky="WE")
+    ui_obj.grid(column=2, row=2, sticky='WE')
     ui_obj.bind('<<ComboboxSelected>>', lambda e: updaterepeatkey())
     ui_objs.append(ui_obj)
 
     # `Move to previous line` label and combobox
     selprev = tk.StringVar(value=keyselprev)
     ui_obj = ttk.Label(mygui)
-    ui_obj.config(text="Move to previous line")
-    ui_obj.grid(column=3, row=1, sticky="E")
+    ui_obj.config(text='Move to previous line')
+    ui_obj.grid(column=3, row=1, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
     ui_obj.config(textvariable=selprev, values=list(keylist), width=5)
-    ui_obj.grid(column=4, row=1, sticky="WE")
+    ui_obj.grid(column=4, row=1, sticky='WE')
     ui_obj.bind('<<ComboboxSelected>>', lambda e: cyclebackward())
     ui_objs.append(ui_obj)
 
     # `Move to next line` label and combobox
     selnext = tk.StringVar(value=keyselnext)
     ui_obj = ttk.Label(mygui)
-    ui_obj.config(text="Move to next line")
-    ui_obj.grid(column=3, row=2, sticky="E")
+    ui_obj.config(text='Move to next line')
+    ui_obj.grid(column=3, row=2, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
     ui_obj.config(textvariable=selnext, values=list(keylist), width=5)
-    ui_obj.grid(column=4, row=2, sticky="WE")
+    ui_obj.grid(column=4, row=2, sticky='WE')
     ui_obj.bind('<<ComboboxSelected>>', lambda e: cycleforward())
     ui_objs.append(ui_obj)
 
@@ -1036,16 +1040,16 @@ if __name__ == "__main__":
     ui_obj = ttk.Button(mygui)
     ui_obj.config(textvariable=togglekeyboard)
     ui_obj.config(command=togglekeyboardlistener)
-    ui_obj.grid(column=5, row=1, sticky="NSWE")
+    ui_obj.grid(column=5, row=1, sticky='NSWE')
     ui_objs.append(ui_obj)
 
     # Hook clipboard checkbox
     hookcb = tk.BooleanVar(value=False)
     ui_obj = ttk.Checkbutton(mygui)
-    ui_obj.config(text="Hook Clipboard")
+    ui_obj.config(text='Hook Clipboard')
     ui_obj.config(variable=hookcb)
     ui_obj.config(command=hookclipboard)
-    ui_obj.grid(column=5, row=2, sticky="WE")
+    ui_obj.grid(column=5, row=2, sticky='WE')
     ui_objs.append(ui_obj)
 
     # Text List (The data to be typed)
@@ -1054,14 +1058,18 @@ if __name__ == "__main__":
     listbox = tk.Listbox(mygui, selectmode=selectmode)
     listbox.config(listvariable=listbox_text, height=15)
     listbox.config(exportselection=False)
-    listbox.grid(column=1, columnspan=6, row=3, rowspan=15, sticky="NSWE")
+    listbox.grid(column=1, columnspan=6, row=3, rowspan=15, sticky='NSWE')
     listbox.selection_set(0)
     listbox.see(0)
-    listbox.bind("<Double-1>", lambda event: copy_item())
-    listbox.bind("<Triple-1>", lambda event: edit_item_window())
-    listbox.bind("<Return>", lambda event: copy_gonext())
-    listbox.bind("<Delete>", lambda event: removeitem())
-    listbox.bind("<Button-3>", do_rightclickmenu)
+    listbox.focus()
+    listbox.bind('<Double-1>', lambda event: copy_item())
+    listbox.bind('<Triple-1>', lambda event: edit_item_window())
+    listbox.bind('<Button-3>', do_rightclickmenu)
+    listbox.bind('<Return>', lambda event: copy_gonext())
+    listbox.bind('<Delete>', lambda event: removeitem())
+    listbox.bind('<Control-Return>', lambda event: togglekeyboardlistener())
+    listbox.bind('<Control-s>', lambda event: savelisttofile())
+    listbox.bind('<Control-i>', lambda event: importfromfile())
     ui_objs.append(listbox)
 
     # Right click menu for copy and select all
@@ -1074,7 +1082,7 @@ if __name__ == "__main__":
     # Scroll bar for the Text List
     scrollbar = ttk.Scrollbar(mygui)
     scrollbar.config(orient=tk.VERTICAL, command=listbox.yview)
-    scrollbar.grid(column=7, row=3, rowspan=20, sticky="NSWE")
+    scrollbar.grid(column=7, row=3, rowspan=20, sticky='NSWE')
     listbox['yscrollcommand'] = scrollbar.set
     ui_objs.append(scrollbar)
 

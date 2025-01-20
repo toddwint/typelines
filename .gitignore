@@ -4,5 +4,6 @@ bash-completion/create_bash_completion.sh
 bash-completion/typelines.py.bak
 bkup
 bkup/*
-docs
-docs/*
+docs/make
+docs/markdown
+docs/output

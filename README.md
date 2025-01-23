@@ -32,11 +32,11 @@ date: 2025-01-23
 
 ## Screenshots
 
-![Windows](../figures/Windows.png)
+![Windows](docs/figures/Windows.png)
 
-![Linux](../figures/Linux.png)
+![Linux](docs/figures/Linux.png)
 
-![macOS](../figures/macOS.png)
+![macOS](docs/figures/macOS.png)
 
 
 ## Installing

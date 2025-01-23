@@ -1,6 +1,6 @@
 ---
 title: README
-date: 2025-01-19
+date: 2025-01-23
 ---
 
 # Type Lines
@@ -8,18 +8,19 @@ date: 2025-01-19
 
 ## Info
 
-`Type Lines` is a python program to use a dedicated hotkey (F1 to F20) to type or copy from a list one line at a time. The list can be populated from a file, template, or from the system clipboard. This functionality can be useful for repetitive or frequently used tasks.
+`Type Lines` is a python program to use a dedicated macro key (F1 to F20) to type or copy from a list one line at a time. The list can be populated from a template file, the system clipboard, or manually. This functionality can be useful for repetitive or frequently used tasks.
 
 
 ## Features
 
 - Compatible on multiple platforms
     - Windows: all features
-    - Linux: all features except hotkey suppression
-    - macOS: keyboard listener support unverified
-- Create a text list and paste the text line by line using a hotkey.
+    - Linux: missing macro key suppression
+    - macOS: all features
+- Create a text list and paste the text line by line using a macro key.
 - Text list can be populated from a text file via the import option.
-  - Variables can be within the text file plus a list of defaults.
+- Text list with variables can be populated from a text file via the import option.
+  - Variables can contain a list of defaults.
   - User is prompted to select or enter the values or the variables.
   - Any mention of the variables inside `{}` characters are swapped.
 - Text list can be populated by the system clipboard.
@@ -42,7 +43,7 @@ date: 2025-01-19
 
 ### Windows
 
-Download the `typelines.py` from here. Also download the `requirements.txt` file which is used to install the 3rd party modules [`pynput`](https://pypi.org/project/pynput/) and [`pyperclip`](https://pypi.org/project/pyperclip/).
+Download `typelines.py` or `typelines.pyw` from here. Also download the `requirements.txt` file which is used to install the 3rd party modules [`pynput`](https://pypi.org/project/pynput/) and [`pyperclip`](https://pypi.org/project/pyperclip/).
 
 Install Python from Python.org and install the required modules found in the `requirements.txt` file using the following steps: 
 
@@ -56,7 +57,7 @@ or simply install the required packages directly with the following command:
 pip install pynput pyperclip
 ```
 
-You can rename `typelines.py` to `typelines.pyw` if you don't want to see a command prompt window in the background of the `Type Lines` window.
+Use `typelines.pyw` if you don't want to see a command prompt window in the background of the `Type Lines` window.
 
 Run the program by double clicking on the icon. If the "Open with" dialog appears chose Python Launcher (the icon with the rocket).
 
@@ -90,6 +91,8 @@ Depending on your display server, you will use either the `xorg` or `uinput` pyn
 The `xorg` backend requires an X11 display server or a program running in XWayland mode. If this condition is not met, the keyboard listener will not work.
 
 The `uinput` backend requires either running as `root` or adding the permissions to the user to control the keyboard. For more information about adding settings for the user see [this post](https://github.com/moses-palmer/pynput/issues/568). Or use the following commands:
+
+#### Adding uinput group
 
 1. Add user to group input to gain access to /dev/uinput and to group tty to gain access to dumpkeys
 
@@ -155,7 +158,9 @@ After:
             if key is not None and as_char(key) is not None}
 ```
 
-The location of the file might be somewhere like this: `~/venv/python3.12/lib/python3.12/site-packages/pynput/keyboard/_uinput.py`
+The location of the file might be somewhere like this: 
+
+`~/venv/python3.12/lib/python3.12/site-packages/pynput/keyboard/_uinput.py`
 
 The keyboard is not being suppressed on Linux. For example, if the `Type & Advance` key is set to `F3` the `F3` key will be received by `Type Lines` but also any other program which is in focus. The result is you may have extra characters typed before the line is typed or a program's menu might open. If your intended use of this program is the serial terminal program Minicom, you can edit the Macro keys settings from within Minicom and set the function keys to send a space key.
 
@@ -165,6 +170,8 @@ Download the script and set the permissions to executable before trying to run i
 
 
 ### macOS
+
+Tested on macOS 15 Sequoia
 
 Download the `typelines.py` from here. Also download the `requirements.txt` file which is used to install the 3rd party modules [`pynput`](https://pypi.org/project/pynput/) and [`pyperclip`](https://pypi.org/project/pyperclip/).
 
@@ -182,27 +189,38 @@ or simply install the required packages directly with the following command:
 pip3 install pynput pyperclip
 ```
 
-For keyboard hotkey typing to work you will have to modify some security settings. Search for `Allow assistive applications to control the computer` or go into `Security & Privacy` > `Privacy` and add applications to 
+For keyboard macro key typing to work you will have to modify some security settings. Search for `Allow assistive applications to control the computer` or go into `Security & Privacy` > `Privacy` and add applications to the following sections.
 
-- Input Monitoring
-- Accessibility
+The sections include:
+
+- Accessibility (For controlling the keyboard and typing)
+- Input Monitoring (For listening for keyboard events)
+
+The applications include:
+
+- Python.app
+    - /Library/Frameworks/Python.framework/Versions/3.12/Resources/Python.app
+- Terminal
+
+Other sections might include:
+
 - Automation
 - Developer Tools
 
-These applications might include:
+Other applications might include:
 
-- Terminal
 - IDLE.app
 - Python Launcher.app
-- Python.app
 - /usr/local/bin/python3
 - /bin/zsh
 - /bin/bash
 
+You will probably have to disable the default behavior of the Function Keys or they will send a command to dim the display or turn the volume down instead of the keycode needed. Look for Apple > System Settings... > Keyboard > Keyboard Shortcuts... > Function Keys > Use F1, F2, etc. keys as standard function keys.
+
 You might want to view the [Platform limitations](https://pynput.readthedocs.io/en/latest/limitations.html#macos) page of pynput's documentation website for tips.
 
 
-Run the program as `root`. You can use the command 
+If you wish to run the program as `root`. You can use the command 
 
 ```
 sudo -E python3 ./typelines.py
@@ -215,9 +233,9 @@ I do not have access to an Apple computer so I am unable to verify. However, wit
 
 The program starts with some sample text added to the list.
 
-Test that the program is working. Open a text editor (other than Windows 11 Notepad [see [Issues](#issues)]). Click the `Start keyboard listener` button. Click the `Type & Advance` key (default is `F3`). If it types the text, it is working.
+Test that the program is working. Open a text editor (other than Windows 11 Notepad [see [Issues](#issues)]). Click the `Start keyboard listener` button (on macOS the keyboard listener is started when the program launches as it will crash if launched afterwards). Click the `Type & Advance` key (default is `F3`). If it types the text, it is working.
 
-Create a file to import. Use any text editor to create a list. An example file is below in the [Examples](#examples) section. Use the `File` > `Import template or file` menu option to import your file.
+Create a file to import. Use any text editor to create a list. An example file is below in the [Examples](#examples) section and also found in the folder `example_import_templates`. Use the `File` > `Import template or file` menu option to import your file.
 
 If you import a file without variables, it populates the list area without any further prompts. If you import a file with variables, another window will appear allowing you to specify the values for the variables specified in the template.
 
@@ -236,7 +254,7 @@ You can view the keyboard backend and program version using the `Help` menu.
 You can see the command line arguments available by typing the program named followed by `-h` or `--help`. One notable option is to import a template or file on program start.
 
 
-### Mouse and Keyboard bindings
+## Mouse and Keyboard bindings
 
 Some useful mouse and keyboard bindings to know include:
 
@@ -246,14 +264,18 @@ Some useful mouse and keyboard bindings to know include:
     - Right click on an item to bring up the actions menu
 
 - Keyboard
-    - Clicking enter on a line will copy the item to the clipboard and select the next item in the list
-    - Clicking delete on a line will remove it from the list
-    - CTRL-Enter will toggle the keyboard listener
-    - CTRL-I will open the import dialog
+    - ENTER will copy the item to the clipboard and select the next item in the list
+    - DELETE will remove the selected item from the list
+    - UP will select the item above the currently selected item
+    - DOWN will select the item above the currently selected item
+    - CTRL-ENTER will toggle the keyboard listener
+    - CTRL-E will open the edit selected item dialog
+    - CTRL-I will open the insert after selected item dialog
+    - CTRL-O will open the import dialog
     - CTRL-S will open the save dialog
 
 
-### Issues
+## Issues
 
 1. Please see pynput's webpage on [Platform limitations](https://pynput.readthedocs.io/en/latest/limitations.html).
 
@@ -282,7 +304,7 @@ There is an [open issue](https://github.com/moses-palmer/pynput/issues/620) caus
 If running wayland, verify your application you are trying to type into is using XWayland. You can install an application called `xeyes`. If your program is XWayland, the eyes will move when the mouse cursor is inside the window. If not, the eyes will do nothing. The program is usually in the package `x11-apps`. On Ubuntu or a Debian based distro you can use this command to install it: `apt-get install x11-apps`
 
 
-### Acknowledgements
+## Acknowledgements
 
 Thanks to this [post](https://github.com/moses-palmer/pynput/issues/170) and this [Microsoft webpage](https://docs.microsoft.com/en-us/windows/win32/inputdev/virtual-key-codes) keyboard suppression is working on Microsoft Windows.
 

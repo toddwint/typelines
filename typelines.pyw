@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
-"""Create or import a text list and type & copy the each line via a
-keyboard hotkey.
-Text can be inserted from a file or from the system clipboard.
-The Import file option includes a feature to take a template file and
+"""Type & copy each line from a list via assignable keyboard macro key.
+Import list from a file, copy from the clipboard, or enter manually.
+The import option includes a feature to take a template file and
 replace keywords with user provided values.
-The list cycles back around to the top after the last command.
+The list cycles back around to the top after the last line.
 """
 
 __progname__ = 'Type Lines'
-__version__ = '0.0.12'
-__date__ = '2025-01-20'
+__version__ = '0.0.13'
+__date__ = '2025-01-23'
 __author__ = 'Todd Wintermute'
 
 import argparse
 import os
 import pathlib
+import queue
 import re
 import shutil
 import sys
+import threading
+import time
 import tkinter as tk
 import tkinter.filedialog
 import tkinter.messagebox
@@ -26,12 +28,17 @@ import tkinter.ttk as ttk
 # 3rd party module
 import pyperclip
 
+# Built-in modules imported at a later time (Linux only using uinput)
+# select
+
 # 3rd party modules imported at a later time
 # pynput
 
 # 3rd party modules imported at a later time (Linux only):
 # evdev
 
+# 3rd party modules imported at a later time (macOS only):
+# Quartz
 
 def parse_arguments():
     """Create command line arguments. Returns a parser object."""
@@ -80,23 +87,23 @@ def on_press(key):
     """Assigned to the keyboard listener on_press option."""
     if not is_keyboard_hooked:
         return True
-    if key == Key[keylist[forward.get()]]:
+    if key == keyforward:
         if reversenextbool.get():
             typeline_gobackward()
         else:
             typeline_goforward()
-    elif key == Key[keylist[repeat.get()]]:
+    elif key == keyrepeat:
         typeline()
-    elif key == Key[keylist[selnext.get()]]:
-        if reversenextbool.get():
-            cyclebackward()
-        else:
-            cycleforward()
-    elif key == Key[keylist[selprev.get()]]:
+    elif key == keyselprev:
         if reversenextbool.get():
             cycleforward()
         else:
             cyclebackward()
+    elif key == keyselnext:
+        if reversenextbool.get():
+            cyclebackward()
+        else:
+            cycleforward()
     else:
         pass
 
@@ -110,12 +117,13 @@ def on_release(key):
 def win32_event_filter(msg, data):
     """Windows specific function to suppress specific key presses."""
     global listener
-    if (msg == 0x0100 or msg == 0x0101) and (
-        data.vkCode == keydict[keylist[forward.get()]] or
-        data.vkCode == keydict[keylist[repeat.get()]] or
-        data.vkCode == keydict[keylist[selnext.get()]] or
-        data.vkCode == keydict[keylist[selprev.get()]]
-        ): # Key Down/Up & selected keys
+    macro_keys = [keyforward, keyrepeat, keyselprev, keyselnext]
+    vk_macro_keys = [k.value.vk for k in macro_keys]
+    if not is_keyboard_hooked:
+        listener._suppress = False
+        return True
+    elif all([msg in (0x0100, 0x0101), (data.vkCode in vk_macro_keys)]):
+        # Key Down/Up on macro keys
         listener._suppress = True
     else:
         listener._suppress = False
@@ -123,28 +131,40 @@ def win32_event_filter(msg, data):
 
 
 def darwin_intercept(event_type, event):
-    """macOS specific function to suppress specific key presses."""
-    import Quartz
-    length, chars = Quartz.CGEventKeyboardGetUnicodeString(
-        event, 100, None, None)
-    if length > 0 and any([
-            #chars == '\x10',  # Not sure, but seemed to work
-            chars == keylist[forward.get()],
-            chars == keylist[repeat.get()],
-            chars == keylist[selnext.get()],
-            chars == keylist[selprev.get()],
-            ]):
-        # Suppress keyboard hotkeys
+    """macOS only. suppress specific function key presses."""
+    key_events = (
+        Quartz.kCGEventKeyDown,  # value = 10
+        Quartz.kCGEventKeyUp,    # value = 11
+        )
+    kb_event_code = Quartz.kCGKeyboardEventKeycode  # value = 9
+    event_keycode = Quartz.CGEventGetIntegerValueField(event, kb_event_code)
+    macro_keys = [keyforward, keyrepeat, keyselprev, keyselnext]
+    keycode_macro_keys = [k.value.vk for k in macro_keys]
+    if not is_keyboard_hooked:
+        return event
+    elif event_type in key_events and event_keycode in keycode_macro_keys:
+        # Suppress keyboard macro keys
         return None
     else:
         return event
+
+
+def controller_worker():
+    """Thread for the keyboard controller to type lines."""
+    keyboard_controller = pynput.keyboard.Controller()
+    while True:
+        time.sleep(100/1000)
+        if not keyboard_queue.empty():
+            curseltxt = keyboard_queue.get()
+            keyboard_controller.type(curseltxt)
+            keyboard_queue.task_done()
 
 
 def typeline():
     """Type the current selected line and copy value to clipboard."""
     try:
         curseltxt = listbox.get(listbox.curselection())
-        controller.type(curseltxt)
+        keyboard_queue.put(curseltxt)
         copy_item()
     except:
         warning_no_selection()
@@ -162,22 +182,19 @@ def typeline_gobackward():
     cyclebackward()
 
 
-def updatetypenextkey():
-    """Reset selection to first item when hotkey is changed."""
-    tmplist = list(listbox.get(0, 'end'))
-    if not tmplist:
-        return False
-    listbox.selection_set(0)
-    listbox.see(0)
-
-
-def updaterepeatkey():
-    """Reset selection to first item when hotkey is changed."""
-    tmplist = list(listbox.get(0, 'end'))
-    if not tmplist:
-        return False
-    listbox.selection_set(0)
-    listbox.see(0)
+def update_macro_keys():
+    """Reset selection and focus when macro keys are changed."""
+    global keyforward
+    global keyrepeat
+    global keyselprev
+    global keyselnext
+    keyforward = Key[keydict[forward.get()]]
+    keyrepeat = Key[keydict[repeat.get()]]
+    keyselprev = Key[keydict[selprev.get()]]
+    keyselnext = Key[keydict[selnext.get()]]
+    curpos = listbox.curselection()[-1] or 0
+    mygui.selection_clear()
+    set_listbox_selection(curpos)
 
 
 def hookclipboard():
@@ -265,14 +282,13 @@ def edit_item_window():
     ent1.grid(column=1, row=2, sticky='WE')
     btn1 = ttk.Button(mychild)
     btn1.config(text='Submit')
-    btn1.config(command=(lambda: submit_edit_item(
-        myedit, ent1.get(), curpos
-        )))
+    btn1.config(command=lambda: submit_edit_item(myedit, ent1.get(), curpos))
     btn1.grid(column=1, row=3, sticky='EWNS')
     myedit.bind('<Escape>', lambda event: childdismiss(myedit))
-    myedit.bind('<Return>', lambda event: submit_edit_item(
-        myedit, ent1.get(), curpos
-        ))
+    myedit.bind(
+        '<Return>',
+        lambda event: submit_edit_item(myedit, ent1.get(), curpos)
+        )
     for child in mychild.winfo_children():
         child.grid_configure(padx=2, pady=2)
     myedit.update()
@@ -323,7 +339,7 @@ def insert_item_window(before_or_after='after'):
     ent1.grid(column=1, row=2, sticky='WE')
     btn1 = ttk.Button(mychild)
     btn1.config(text='Submit')
-    btn1.config(command=(lambda: submit(myinsert, ent1.get())))
+    btn1.config(command=lambda: submit(myinsert, ent1.get()))
     btn1.grid(column=1, row=3)
     btn1.grid(sticky='EWNS')
     myinsert.bind('<Escape>', lambda event: childdismiss(myinsert))
@@ -386,37 +402,34 @@ def removeitem():
     """Remove the selected line from the list."""
     if listbox.curselection():
         selected = listbox.curselection()
-        # Remove multiple rows (not allowed to select multiple currently)
+        # Remove multiple rows (currently select multiple not enabled)
         if len(selected) > 1:
             for row in selected[::-1]:
                 listbox.delete(row)
             return True
         curpos = listbox.curselection()[0]
+        old_end = listbox.size() - 1
         listbox.delete(listbox.curselection())
-        if curpos < len(listbox.get(0, 'end')):
-            listbox.selection_set(curpos)
-            listbox.see(curpos)
-        elif curpos >= len(listbox.get(0, 'end')):
-            listbox.selection_set(len(listbox.get(0, 'end'))-1)
-            listbox.see(curpos)
+        new_end = listbox.size() - 1
+        if curpos < new_end:
+            set_listbox_selection(curpos)
+        elif curpos >= new_end:
+            set_listbox_selection(new_end)
         else:
-            listbox.selection_set(0)
-            listbox.see(0)
+            set_listbox_selection(0)
     else:
-        return False
         warning_no_selection()
-    if not len(listbox.get(0, 'end')):
+        return False
+    if not listbox.size():
         listbox.insert(0, '')
-        listbox.selection_set(0)
-        listbox.see(0)
+        set_listbox_selection(0)
 
 
 def clearclipboard():
     """Remove all lines from the list."""
     listbox.delete(0, 'end')
     listbox.insert(0, '')
-    listbox.selection_set(0)
-    listbox.see(0)
+    set_listbox_selection(0)
 
 
 def moveitemup():
@@ -469,9 +482,7 @@ def updatechildcombo(child, text, varsdict, myvarscmbs2):
         ]
     listbox_text.set(fmttextlist)
     removeblanklines()
-    listbox.selection_clear(0, 'end')
-    listbox.selection_set(0)
-    listbox.see(0)
+    set_listbox_selection(0)
     curline = listbox.get(listbox.curselection())
     if skipcommentlines.get() and re.match(r'^#', curline):
         if reversenextbool.get():
@@ -489,9 +500,7 @@ def importwithoutvars(text):
     textlist = [x for x in textlist if not re.match(r'^#[^ a-zA-Z0-9]',x)]
     listbox_text.set(textlist)
     removeblanklines()
-    listbox.selection_clear(0, 'end')
-    listbox.selection_set(0)
-    listbox.see(0)
+    set_listbox_selection(0)
     curline = listbox.get(listbox.curselection())
     if skipcommentlines.get() and re.match(r'^#', curline):
         if reversenextbool.get():
@@ -535,9 +544,9 @@ def importwithvars(text, varsdict):
     myvarsbtns1 = []
     myvarsbtns1.append(ttk.Button(mychild))
     myvarsbtns1[-1].config(text='Submit')
-    myvarsbtns1[-1].config(command=( lambda: updatechildcombo(
-        myvars, text, varsdict, myvarscmbs2
-        )))
+    myvarsbtns1[-1].config(
+        command=lambda: updatechildcombo(myvars, text, varsdict, myvarscmbs2)
+        )
     myvarsbtns1[-1].grid(column=1, columnspan=3, row=n+1, rowspan=3)
     myvarsbtns1[-1].grid(sticky='EWNS')
     myvars.bind('<Escape>', lambda event: childdismiss(myvars))
@@ -559,7 +568,7 @@ def importfromfile(filename=''):
     if not filename:
         initialdir = pathlib.Path()
         filename = tkinter.filedialog.askopenfilename(
-            #initialdir=initialdir,  # omit and last location is used
+            #initialdir=initialdir,  # omit so last location is used
             defaultextension='.txt',
             filetypes=(('Text file', '.txt'), ('All files', '*.*'))
             )
@@ -594,41 +603,46 @@ def importfromfile(filename=''):
         return False
 
 
+def set_listbox_selection(position):
+    """Set the listbox selection and make it visible (scroll)"""
+    listbox.selection_clear(0, 'end')
+    listbox.selection_set(position)
+    listbox.see(position)
+    listbox.focus()
+    listbox.activate(position)
+
+
 def cycleforward():
     """Move the selection to the next item."""
-    tmplist = list(listbox.get(0, 'end'))
-    if not tmplist: return
+    size = listbox.size()
+    if not size:
+        return False
     if not listbox.curselection():
+        warning_no_selection()
         return False
     curpos = listbox.curselection()[0]
-    if curpos < len(tmplist) - 1:
-        listbox.selection_clear(curpos)
-        listbox.selection_set(curpos+1)
-        listbox.see(curpos+1)
-    if curpos == len(tmplist) - 1:
-        listbox.select_clear(curpos)
-        listbox.selection_set(0)
-        listbox.see(0)
+    end = size - 1
+    if curpos < end:
+        set_listbox_selection(curpos+1)
+    if curpos == end:
+        set_listbox_selection(0)
     curline = listbox.get(listbox.curselection())
     if skipcommentlines.get() and re.match(r'^#', curline):
         cycleforward()
 
-
 def cyclebackward():
     """Move the selection to the previous item."""
-    tmplist = list(listbox.get(0, 'end'))
-    if not tmplist: return
+    size = listbox.size()
+    if not size:
+        return False
     if not listbox.curselection():
+        warning_no_selection()
         return False
     curpos = listbox.curselection()[0]
     if curpos > 0:
-        listbox.selection_clear(curpos)
-        listbox.selection_set(curpos-1)
-        listbox.see(curpos-1)
+        set_listbox_selection(curpos-1)
     if curpos == 0:
-        listbox.select_clear(curpos)
-        listbox.selection_set(len(tmplist) - 1)
-        listbox.see(len(tmplist) - 1)
+        set_listbox_selection('end')
     curline = listbox.get(listbox.curselection())
     if skipcommentlines.get() and re.match(r'^#', curline):
         cyclebackward()
@@ -654,7 +668,7 @@ def savelisttofile():
     """Save the current list to a file."""
     initialdir = pathlib.Path()
     filename = tkinter.filedialog.asksaveasfile(
-        #initialdir=initialdir,  # omit and last location is used
+        #initialdir=initialdir,  # omit so last location is used
         defaultextension='.txt',
         filetypes=(('Text file', '.txt'), ('All files', '*.*'))
         )
@@ -692,46 +706,51 @@ def define_kybd_listener():
         win32_event_filter=win32_event_filter,
         darwin_intercept=darwin_intercept,
         suppress=suppress,
-        uinput_device_paths=uinput_device_paths)
+        uinput_device_paths=uinput_device_paths,
+        )
     return listener
 
 
-def startkeyboardlistener():
-    """Start the keyboard listener."""
+def define_kybd_controller():
+    """Create a keyboard controller. Return the controller object."""
+    controller = threading.Thread(target=controller_worker, daemon=True)
+    return controller
+
+
+def start_keyboard_listener():
+    """Start the keyboard listener on a separate thread."""
+    if not listener.running:
+        listener.start()
+
+
+def start_keyboard_controller():
+    """Start the keyboard controller on a separate thread."""
+    if not controller.is_alive():
+        controller.start()
+
+
+def start_keyboard_threads():
+    """Start the keyboard listener and controller."""
     global is_keyboard_hooked
-    global listener
-    if 'listener' in globals():
-        if not listener.running:
-            listener.start()  
-            # listener uses a separate thread
-        is_keyboard_hooked = True
-    else:
-        listener = define_kybd_listener()
-        startkeyboardlistener()
+    start_keyboard_listener()
+    start_keyboard_controller()
+    is_keyboard_hooked = True
 
 
-def stopkeyboardlistener():
-    """Stop the keyboard listener."""
+def stop_keyboard_threads():
+    """Stop the keyboard listener by setting a flag."""
     global is_keyboard_hooked
-    if 'listener' in globals():
-        is_keyboard_hooked = False
-    else:
-        return False
+    is_keyboard_hooked = False
 
 
-def togglekeyboardlistener():
+def toggle_keyboard_threads():
     """Toggle the state of the keyboard listener."""
-    global listener
-    if 'listener' in globals():
-        if is_keyboard_hooked:
-            stopkeyboardlistener()
-            togglekeyboard.set('Start keyboard listener')
-        else:
-            startkeyboardlistener()
-            togglekeyboard.set('Stop keyboard listener')
+    if is_keyboard_hooked:
+        stop_keyboard_threads()
+        togglekeyboard.set('Start keyboard listener')
     else:
-        listener = define_kybd_listener()
-        togglekeyboardlistener()
+        start_keyboard_threads()
+        togglekeyboard.set('Stop keyboard listener')
 
 
 def removeblanklines():
@@ -748,8 +767,7 @@ def removeblanklines():
         else:
             listbox.delete(0, 'end')
             listbox.insert(0, *tmpl)
-            listbox.selection_set(0)
-            listbox.see(0)
+            set_listbox_selection(0)
 
 
 def jumpovercommentlines():
@@ -796,14 +814,12 @@ def detect_keyboard():
     """Detect the user's keyboard interactively on Linux."""
     import evdev
     import select
-    import time
     global exit_flag
     devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
     timeout_seconds = 10
     exit_flag = False
     main = detect_keyboard_window(timeout_seconds)
     time_timeout = time.time() + timeout_seconds
-    #while True:
     while not exit_flag:
         main.update()
         if time.time() > time_timeout:
@@ -834,14 +850,12 @@ if __name__ == '__main__':
         # Microsoft Windows platforms
         bkend = 'win32'
     elif userplatform == 'darwin':
+        import Quartz
         # Apple macOS platforms
         bkend = 'darwin'
         rootuser = True if shutil.os.geteuid() == 0 else False
         if rootuser:
-            print("I see you're running as root.")
-        else:
-            print('On macOS you should run as root: ', end='')
-            print('`sudo -E python3 ./typelines.py`')
+            print("Running with root user permissions")
     elif userplatform == 'linux':
         # Linux platforms
         # Keyboard backends determined by desktop environment
@@ -849,7 +863,7 @@ if __name__ == '__main__':
         # uinput for wayland DE or no DE
         rootuser = True if shutil.os.geteuid() == 0 else False
         if rootuser:
-            print("I see you're running as root.")
+            print("Running with root user permissions")
         try:
             window_system = os.getenv('XDG_SESSION_TYPE')
         except:
@@ -891,17 +905,9 @@ if __name__ == '__main__':
     import pynput
 
     Key = pynput.keyboard.Key
-    keylist = {f'f{n+1}': f'f{n+1}' for n in range(20)}
-    # define the keylist as F1 through F20
-    keydict = {
-        # keydict is only used in the win32_event_filter
-        key.name: key.value.vk for key in pynput.keyboard.Key
-        if key.name in keylist
-        }
-    keyforward = 'f3'
-    keyrepeat = 'f4'
-    keyselprev = 'f5'
-    keyselnext = 'f6'
+    # define the macro keys as F1 through F20
+    keydict = {f'F{n+1}': f'f{n+1}' for n in range(20)}
+    keylist = list(keydict.keys())
     lastcbvalue = ''
     hookcbid = ''
     test_listbox_text = [f'sample text {x+1:02d}' for x in range(25)]
@@ -981,55 +987,59 @@ if __name__ == '__main__':
     root.config(menu=mainmenu)
 
     # `Type & Advance` label and combobox
-    forward = tk.StringVar(value=keyforward)
+    forward = tk.StringVar(value='F3')
     ui_obj = ttk.Label(mygui)
     ui_obj.config(text='`Type & Advance` Key')
     ui_obj.grid(column=1, row=1, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
-    ui_obj.config(textvariable=forward, values=list(keylist), width=5)
+    ui_obj.config(textvariable=forward, values=keylist, width=5)
+    ui_obj.config(state='readonly')
     ui_obj.grid(column=2, row=1, sticky='WE')
-    ui_obj.bind('<<ComboboxSelected>>', lambda e: updatetypenextkey())
+    ui_obj.bind('<<ComboboxSelected>>', lambda event: update_macro_keys())
     ui_objs.append(ui_obj)
 
     # `Type & Stay` label and combobox
-    repeat = tk.StringVar(value=keyrepeat)
+    repeat = tk.StringVar(value='F4')
     ui_obj = ttk.Label(mygui)
     ui_obj.config(text='`Type & Stay` Key')
     ui_obj.grid(column=1, row=2, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
-    ui_obj.config(textvariable=repeat, values=list(keylist), width=5)
+    ui_obj.config(textvariable=repeat, values=keylist, width=5)
+    ui_obj.config(state='readonly')
     ui_obj.grid(column=2, row=2, sticky='WE')
-    ui_obj.bind('<<ComboboxSelected>>', lambda e: updaterepeatkey())
+    ui_obj.bind('<<ComboboxSelected>>', lambda event: update_macro_keys())
     ui_objs.append(ui_obj)
 
     # `Move to previous line` label and combobox
-    selprev = tk.StringVar(value=keyselprev)
+    selprev = tk.StringVar(value='F5')
     ui_obj = ttk.Label(mygui)
     ui_obj.config(text='Move to previous line')
     ui_obj.grid(column=3, row=1, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
-    ui_obj.config(textvariable=selprev, values=list(keylist), width=5)
+    ui_obj.config(textvariable=selprev, values=keylist, width=5)
+    ui_obj.config(state='readonly')
     ui_obj.grid(column=4, row=1, sticky='WE')
-    ui_obj.bind('<<ComboboxSelected>>', lambda e: cyclebackward())
+    ui_obj.bind('<<ComboboxSelected>>', lambda event: update_macro_keys())
     ui_objs.append(ui_obj)
 
     # `Move to next line` label and combobox
-    selnext = tk.StringVar(value=keyselnext)
+    selnext = tk.StringVar(value='F6')
     ui_obj = ttk.Label(mygui)
     ui_obj.config(text='Move to next line')
     ui_obj.grid(column=3, row=2, sticky='E')
     ui_objs.append(ui_obj)
     ui_obj = ttk.Combobox(mygui)
-    ui_obj.config(textvariable=selnext, values=list(keylist), width=5)
+    ui_obj.config(textvariable=selnext, values=keylist, width=5)
+    ui_obj.config(state='readonly')
     ui_obj.grid(column=4, row=2, sticky='WE')
-    ui_obj.bind('<<ComboboxSelected>>', lambda e: cycleforward())
+    ui_obj.bind('<<ComboboxSelected>>', lambda event: update_macro_keys())
     ui_objs.append(ui_obj)
 
     # `Start/Stop keyboard listener` button
-    if userplatform == 'darwin':
+    if userplatform == 'darwin' and not sys.flags.interactive:
         is_keyboard_hooked = True
         # Must start with program or it will crash when starting listener
     else:
@@ -1039,9 +1049,10 @@ if __name__ == '__main__':
     togglekeyboard = tk.StringVar(value=value)
     ui_obj = ttk.Button(mygui)
     ui_obj.config(textvariable=togglekeyboard)
-    ui_obj.config(command=togglekeyboardlistener)
+    ui_obj.config(command=toggle_keyboard_threads)
     ui_obj.grid(column=5, row=1, sticky='NSWE')
     ui_objs.append(ui_obj)
+    keyboard_listener_button = ui_obj
 
     # Hook clipboard checkbox
     hookcb = tk.BooleanVar(value=False)
@@ -1055,22 +1066,26 @@ if __name__ == '__main__':
     # Text List (The data to be typed)
     listbox_text = tk.StringVar(value=test_listbox_text)
     selectmode = (tk.BROWSE, tk.EXTENDED, tk.SINGLE, tk.MULTIPLE)[2]
-    listbox = tk.Listbox(mygui, selectmode=selectmode)
-    listbox.config(listvariable=listbox_text, height=15)
-    listbox.config(exportselection=False)
-    listbox.grid(column=1, columnspan=6, row=3, rowspan=15, sticky='NSWE')
-    listbox.selection_set(0)
-    listbox.see(0)
-    listbox.focus()
-    listbox.bind('<Double-1>', lambda event: copy_item())
-    listbox.bind('<Triple-1>', lambda event: edit_item_window())
-    listbox.bind('<Button-3>', do_rightclickmenu)
-    listbox.bind('<Return>', lambda event: copy_gonext())
-    listbox.bind('<Delete>', lambda event: removeitem())
-    listbox.bind('<Control-Return>', lambda event: togglekeyboardlistener())
-    listbox.bind('<Control-s>', lambda event: savelisttofile())
-    listbox.bind('<Control-i>', lambda event: importfromfile())
-    ui_objs.append(listbox)
+    activestyle = (tk.UNDERLINE, tk.DOTBOX, tk.NONE)[2]
+    ui_obj = tk.Listbox(mygui, selectmode=selectmode)
+    ui_obj.config(listvariable=listbox_text, height=15)
+    ui_obj.config(exportselection=False, activestyle=activestyle)
+    ui_obj.grid(column=1, columnspan=6, row=3, rowspan=15, sticky='NSWE')
+    ui_obj.bind('<Button-3>', do_rightclickmenu)
+    ui_obj.bind('<Double-1>', lambda event: copy_item())
+    ui_obj.bind('<Triple-1>', lambda event: edit_item_window())
+    ui_obj.bind('<Up>', lambda event: cyclebackward())
+    ui_obj.bind('<Down>', lambda event: cycleforward())
+    ui_obj.bind('<Return>', lambda event: copy_gonext())
+    ui_obj.bind('<Delete>', lambda event: removeitem())
+    ui_obj.bind('<Control-Return>', lambda event: toggle_keyboard_threads())
+    ui_obj.bind('<Control-e>', lambda event: edit_item_window())
+    ui_obj.bind('<Control-i>', lambda event: insert_item_after_window())
+    ui_obj.bind('<Control-o>', lambda event: importfromfile())
+    ui_obj.bind('<Control-s>', lambda event: savelisttofile())
+    ui_objs.append(ui_obj)
+    listbox = ui_obj
+    set_listbox_selection(0)
 
     # Right click menu for copy and select all
     rightclickmenu = tk.Menu(listbox, tearoff=False)
@@ -1095,16 +1110,24 @@ if __name__ == '__main__':
     root.update()
     root.minsize(root.winfo_width(), root.winfo_height())
 
-    controller = pynput.keyboard.Controller()
+    update_macro_keys()
+    keyboard_queue = queue.Queue()
     listener = define_kybd_listener()
+    controller = define_kybd_controller()
 
-    if userplatform == 'darwin' and 'listener' in globals():
+    if userplatform == 'darwin':
         print(f"{listener.IS_TRUSTED=}")
 
     if is_keyboard_hooked:
-        startkeyboardlistener()
+        start_keyboard_listener()
+        start_keyboard_controller()
 
     if args.filename:
         importfromfile(args.filename)
 
-    root.mainloop()
+    if not sys.flags.interactive:
+        root.mainloop()
+    else:
+        print('Running in interactive mode.\nKeyboard listener is disabled.')
+        keyboard_listener_button.config(state='disabled')
+        listbox.unbind('<Control-Return>')

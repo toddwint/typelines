@@ -246,6 +246,8 @@ code span.wa { color: #8f5902; font-weight: bold; font-style: italic; }
   
   
   
+  
+  
 </head>
 <body>
 <header id="title-block-header">
@@ -395,7 +397,8 @@ sudo usermod -a -G tty $USER</code></pre>
 <ol start="2" type="1">
 <li>Add udev rule</li>
 </ol>
-<pre><code>echo &#39;KERNEL==&quot;uinput&quot;, MODE=&quot;0660&quot;, GROUP=&quot;input&quot;&#39; | sudo tee /etc/udev/rules.d/99-uinput.rules</code></pre>
+<pre><code>echo &#39;KERNEL==&quot;uinput&quot;, MODE=&quot;0660&quot;, GROUP=&quot;input&quot;&#39; \
+    | sudo tee /etc/udev/rules.d/99-uinput.rules</code></pre>
 <ol start="3" type="1">
 <li>Activate it!</li>
 </ol>
@@ -580,7 +583,7 @@ bindings</h2>
 in the list</li>
 <li>DELETE will remove the selected item from the list</li>
 <li>UP will select the item above the currently selected item</li>
-<li>DOWN will select the item above the currently selected item</li>
+<li>DOWN will select the item below the currently selected item</li>
 <li>CTRL-ENTER will toggle the keyboard listener</li>
 <li>CTRL-E will open the edit selected item dialog</li>
 <li>CTRL-I will open the insert after selected item dialog</li>

@@ -1,5 +1,6 @@
 ---
 title: README
+author: Todd Wintermute
 date: 2025-01-23
 ---
 
@@ -104,7 +105,8 @@ sudo usermod -a -G tty $USER
 2. Add udev rule
 
 ```
-echo 'KERNEL=="uinput", MODE="0660", GROUP="input"' | sudo tee /etc/udev/rules.d/99-uinput.rules
+echo 'KERNEL=="uinput", MODE="0660", GROUP="input"' \
+    | sudo tee /etc/udev/rules.d/99-uinput.rules
 ```
 
 3. Activate it!
@@ -267,7 +269,7 @@ Some useful mouse and keyboard bindings to know include:
     - ENTER will copy the item to the clipboard and select the next item in the list
     - DELETE will remove the selected item from the list
     - UP will select the item above the currently selected item
-    - DOWN will select the item above the currently selected item
+    - DOWN will select the item below the currently selected item
     - CTRL-ENTER will toggle the keyboard listener
     - CTRL-E will open the edit selected item dialog
     - CTRL-I will open the insert after selected item dialog
